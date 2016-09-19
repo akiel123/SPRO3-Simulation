@@ -41,10 +41,15 @@ public class ControlCar : MonoBehaviour
 	[SerializeField]
 	public float maxRotation = 60;
 
-	public float ib60TurnR = Mathf.Sqrt(Mathf.Pow(5.1f, 2) + Mathf.Pow(1, 2));
-	public float ob60TurnR = Mathf.Sqrt(Mathf.Pow(13.1f, 2) + Mathf.Pow(1, 2));
-	public float if60TurnR = Mathf.Sqrt(Mathf.Pow(5.1f, 2) + Mathf.Pow(13.1f, 2));
-	public float of60TurnR = Mathf.Sqrt(Mathf.Pow(13.1f, 2) + Mathf.Pow(13.1f, 2));
+	private float ib60TurnRV = Mathf.Sqrt(Mathf.Pow(1.2f, 2) + Mathf.Pow(0, 2));
+	private float ob60TurnRV = Mathf.Sqrt(Mathf.Pow(5.2f, 2) + Mathf.Pow(0, 2));
+	private float if60TurnRV = Mathf.Sqrt(Mathf.Pow(1.2f, 2) + Mathf.Pow(5.8f, 2));
+	private float of60TurnRV= Mathf.Sqrt(Mathf.Pow(5.2f, 2) + Mathf.Pow(5.8f, 2));
+
+	public float ib60TurnR { get { return ib60TurnRV; } }
+	public float ob60TurnR { get { return ob60TurnRV; } }
+	public float if60TurnR { get { return if60TurnRV; } }
+	public float of60TurnR { get { return of60TurnRV; } }
 
 	Vector3[] originalPosition;
 	Quaternion[] originalRotation;
@@ -199,5 +204,13 @@ public class ControlCar : MonoBehaviour
 	public float getBodyAngleR()
 	{
 		return measurePoint.eulerAngles.y * Mathf.Deg2Rad % (2 * Mathf.PI);
+	}
+	public float distanceToPoint(Vector3 point)
+	{
+		return (measurePoint.transform.position - point).magnitude;
+	}
+	public Vector3 getPosition()
+	{
+		return measurePoint.transform.position;
 	}
 }
