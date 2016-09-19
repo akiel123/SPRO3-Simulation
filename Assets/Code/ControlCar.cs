@@ -3,6 +3,7 @@ using System.Collections;
 
 public class ControlCar : MonoBehaviour
 {
+	
 
 	public Rigidbody wheelLeft;
 	public Rigidbody wheelRight;
@@ -11,6 +12,7 @@ public class ControlCar : MonoBehaviour
 	public Rigidbody body;
 	public Rigidbody backLeft;
 	public Rigidbody backRight;
+	public Transform measurePoint;
 
 	public DistanceSensor[] sensors;
 	public bool enableAutoPark = false;
@@ -39,6 +41,11 @@ public class ControlCar : MonoBehaviour
 	[SerializeField]
 	public float maxRotation = 60;
 
+	public float ib60TurnR = Mathf.Sqrt(Mathf.Pow(5.1f, 2) + Mathf.Pow(1, 2));
+	public float ob60TurnR = Mathf.Sqrt(Mathf.Pow(13.1f, 2) + Mathf.Pow(1, 2));
+	public float if60TurnR = Mathf.Sqrt(Mathf.Pow(5.1f, 2) + Mathf.Pow(13.1f, 2));
+	public float of60TurnR = Mathf.Sqrt(Mathf.Pow(13.1f, 2) + Mathf.Pow(13.1f, 2));
+
 	Vector3[] originalPosition;
 	Quaternion[] originalRotation;
 	GameObject[] objects;
@@ -46,7 +53,6 @@ public class ControlCar : MonoBehaviour
 	// Use this for initialization
 	void Start()
 	{
-
 		objects = new GameObject[5];
 		objects[0] = gameObject;
 		objects[1] = wheelIntLeft.gameObject;
@@ -185,5 +191,13 @@ public class ControlCar : MonoBehaviour
 	public float getWheelAngle()
 	{
 		return wheelIntLeft.transform.localEulerAngles.y;
+	}
+	public float getBodyAngleD()
+	{
+		return measurePoint.eulerAngles.y % 360;
+	}
+	public float getBodyAngleR()
+	{
+		return measurePoint.eulerAngles.y * Mathf.Deg2Rad % (2 * Mathf.PI);
 	}
 }

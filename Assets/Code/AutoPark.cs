@@ -8,6 +8,11 @@ public class AutoPark : MonoBehaviour{
 
 	int checkCount = 0;
 
+	void Start()
+	{
+		StartCoroutine("shiftDistance");
+	}
+
 	public void runAutoPark()
 	{
 		StartCoroutine("doPark");
@@ -57,7 +62,6 @@ public class AutoPark : MonoBehaviour{
 		while (control.getWheelAngle() > (360 - control.maxRotation - 1) && control.getWheelAngle() < (360 - control.maxRotation + 1)) yield return null; // until wheel is allmost fully turned
 		control.command = new ControlCar.CommandSet(-1, -1, false); //Drive back while turning
 		while (Mathf.Atan((backMiddlePointingBack1.getDistance() - backMiddlePointingBack2.getDistance()) / backSensorOffset) * Mathf.Rad2Deg > 0 || backMiddlePointingBack1.getDistance() == -1) yield return null; ; // until car is aligned with object 2
-		Debug.Log(backMiddlePointingBack1.getDistance() + "  " + backMiddlePointingBack2.getDistance());
 		control.command = new ControlCar.CommandSet(0, 0, true); //Break
 		while (control.getVelocity() > 0.5f) yield return null; // until allmost at standstill
 		control.command = new ControlCar.CommandSet(0, 1, false); //Turn to middle position
@@ -72,6 +76,57 @@ public class AutoPark : MonoBehaviour{
 	{
 		Debug.Log("check" + checkCount);
 		checkCount++;
+	}
+
+	public void doShiftDistance(float distance)
+	{
+		//shiftDistance(5);
+	}
+	private IEnumerator shiftDistance()
+	{
+		float distance = 2;
+		float angle = Mathf.Acos(1-(distance/(control.ib60TurnR+control.ob60TurnR)));
+		float startAngle = control.getBodyAngleR();
+		Debug.Log("Angle: " + angle + "   Start Angle: " + startAngle);
+
+		control.autoParking = true; //Start
+
+		control.command = new ControlCar.CommandSet(0, 0, true); //Break
+		while (control.getVelocity() > 0.5f) yield return null; // until allmost at standstill
+		control.command = new ControlCar.CommandSet(0, 1, false); //Turn to the right
+		while (!(control.getWheelAngle() > control.maxRotation - 1 && control.getWheelAngle() < control.maxRotation + 1)) yield return null; // until wheel is allmost fully turned
+
+		float a1 = (startAngle - angle) % (Mathf.PI * 2) + 0.1f;
+		float a2 = (startAngle - angle) % (Mathf.PI * 2) - 0.1f;
+		if ((startAngle - angle) % (Mathf.PI * 2) < 0.1f) a2 = 0;
+		if ((startAngle - angle) % (Mathf.PI * 2) > Mathf.PI * 2 - 0.1f) a1 = Mathf.PI * 2;
+		Debug.Log((startAngle - angle) % (Mathf.PI * 2));
+		Debug.Log("a1: " + a1 + "   a2: " + a2);
+
+		control.command = new ControlCar.CommandSet(-1, 1, false); //Back while turning
+		while (control.getBodyAngleR() > a1 || control.getBodyAngleR() < a2) yield return null; //Until angle is more than required angle
+		Debug.Log("angle is: " + control.getBodyAngleD());
+		check();
+		control.command = new ControlCar.CommandSet(0, 0, true); //Break
+		while (control.getVelocity() > 0.5f) yield return null; // until allmost at standstill
+		control.command = new ControlCar.CommandSet(0, -1, true); //Turn to the left
+		while (control.getWheelAngle() > (360 - control.maxRotation - 1) && control.getWheelAngle() < (360 - control.maxRotation + 1)) yield return null; // until wheel is allmost fully turned
+		control.command = new ControlCar.CommandSet(-1, -1, false); //Drive back while turning
+
+		a1 = startAngle + 0.1f;
+		a2 = startAngle - 0.1f;
+		if (startAngle < 0.1f) a2 = 0;
+		if (startAngle > Mathf.PI * 2 - 0.1f) a1 = Mathf.PI * 2;
+
+		while (control.getBodyAngleR() > a1 || control.getBodyAngleR() < a2 % (2 * Mathf.PI)) yield return null; //until back at start angle
+		control.command = new ControlCar.CommandSet(0, 0, true); //Break
+		while (control.getVelocity() > 0.5f) yield return null; // until allmost at standstill
+		control.command = new ControlCar.CommandSet(0, 1, false); //Turn to middle position
+		while (control.getWheelAngle() > 100 && control.getWheelAngle() < 356) yield return null; // until done
+		Debug.Log("Done shifting");
+
+		control.autoParking = false; //Done
+
 	}
 
 
