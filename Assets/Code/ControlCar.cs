@@ -13,6 +13,7 @@ public class ControlCar : MonoBehaviour
 	public Rigidbody backRight;
 
 	public DistanceSensor[] sensors;
+	public bool enableAutoPark = false;
 
 	public struct CommandSet{
 		public int forward;
@@ -59,7 +60,7 @@ public class ControlCar : MonoBehaviour
 			originalPosition[i] = objects[i].transform.position;
 			originalRotation[i] = objects[i].transform.rotation;
 		}
-		autoParker.runAutoPark();
+		if(enableAutoPark) autoParker.runAutoPark();
 		
 	}
 
