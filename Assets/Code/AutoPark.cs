@@ -9,10 +9,11 @@ public class AutoPark : MonoBehaviour{
 	float rrad = Mathf.PI * 2;
 	int checkCount = 0;
 	bool doingSubRoutine = false;
+	bool performingBasicShift = false;
 
 	void Start()
 	{
-		doShiftDistance(5);
+		StartCoroutine(shiftDistanceV4(10));
 	}
 
 	public void runAutoPark()
@@ -94,9 +95,9 @@ public class AutoPark : MonoBehaviour{
 	{
 		StartCoroutine( shiftDistanceV2(20));
 	}
-	private IEnumerator shiftDistance(float distance)
+	private IEnumerator shiftDistanceBack(float distance)
 	{
-
+		performingBasicShift = true;
 		//Enable automatic control
 		control.autoParking = true; 
 
@@ -151,11 +152,12 @@ public class AutoPark : MonoBehaviour{
 		while (doingSubRoutine) yield return null;
 
 		//Done - Give back control
-		control.autoParking = false; 
+		control.autoParking = false;
+		performingBasicShift = false;
 	}
-	private IEnumerator shiftDistanceV2(float distance)
+	private IEnumerator shiftDistanceFrontBack(float distance)
 	{
-
+		performingBasicShift = true;
 		//Enable automatic control
 		control.autoParking = true;
 
@@ -239,8 +241,82 @@ public class AutoPark : MonoBehaviour{
 
 		//Done - Give back control
 		control.autoParking = false;
+		performingBasicShift = false;
+	}
+
+	private IEnumerator shiftDistanceFront(float distance)
+	{
+		performingBasicShift = false;
+		//Enable automatic control
+		control.autoParking = true;
+
+		//Prepare variables
+		bool turnRadiusExceeded = false;
+		float extraDistance = 0;
+		float angle = 0;
+		float startAngle = control.getBodyAngleR();
+
+		//Check if straight driving is needed and prepare variables
+		if (distance > (control.ib60TurnR + control.ob60TurnR) * 2)
+		{
+			Debug.Log("Straight needed");
+			angle = 90 * Mathf.Deg2Rad;
+			turnRadiusExceeded = true;
+			extraDistance = distance - (control.ib60TurnR + control.ob60TurnR) * 2;
+		}
+		else angle = Mathf.Acos(1 - (distance / ((control.ib60TurnR + control.ob60TurnR) * 2)));
+		StartCoroutine(breaK());
+		while (doingSubRoutine) yield return null;
+
+
+		StartCoroutine(turnRight());
+		//Drive forward while turning right
+		control.command = new ControlCar.CommandSet(1, 1, false);
+		float a1 = (startAngle + angle + rrad) % rrad + 0.01f;
+		float a2 = (startAngle + angle + rrad) % rrad - 0.01f;
+		if ((startAngle + angle + rrad) % rrad < 0.01f) a2 = 0;
+		if ((startAngle + angle + rrad) % rrad > rrad - 0.01f) a1 = rrad;
+		while (control.getBodyAngleR() > a1 || control.getBodyAngleR() < a2) yield return null; //Until angle is more than required angle
+		StartCoroutine(breaK());
+		while (doingSubRoutine) yield return null;
+
+		//If staight driving is necessary, do it now
+		if (turnRadiusExceeded)
+		{
+			Debug.Log("Driving straight");
+			StartCoroutine(driveDistance(extraDistance));
+			while (doingSubRoutine) yield return null;
+			StartCoroutine(breaK());
+			while (doingSubRoutine) yield return null;
+		}
+
+		StartCoroutine(turnLeft());
+		while (doingSubRoutine) yield return null;
+		//Drive forward while turning left
+		control.command = new ControlCar.CommandSet(1, -1, false);
+		a1 = startAngle + 0.01f;
+		a2 = startAngle - 0.01f;
+		if (startAngle < 0.01f) a2 = 0;
+		if (startAngle > rrad - 0.01f) a1 = rrad;
+		while (control.getBodyAngleR() > a1 || control.getBodyAngleR() < a2 % (2 * Mathf.PI)) yield return null; //until back at start angle
+		StartCoroutine(breaK());
+		while (doingSubRoutine) yield return null;
+		performingBasicShift = false;
+	}
+	private IEnumerator shiftDistanceBackFront(float distance)
+	{
+		StartCoroutine (shiftDistanceBack(distance * 0.5f));
+		while (performingBasicShift) yield return null;
+		StartCoroutine (shiftDistanceFront(distance * 0.5f));
+		while (performingBasicShift) yield return null;
+		turnMiddle();
+		while (doingSubRoutine) yield return null;
+	}
+	private IEnumerator shiftDistanceLimitedSpace(float distance)
+	{
 
 	}
+
 
 	private IEnumerator breaK()
 	{
