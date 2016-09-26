@@ -13,7 +13,7 @@ public class AutoPark : MonoBehaviour{
 
 	void Start()
 	{
-		StartCoroutine(shiftDistanceLimitedSpace(10,3));
+		StartCoroutine(shiftDistanceBackOffset(3, 45 * Mathf.Deg2Rad));	
 	}
 
 	public void runAutoPark()
@@ -84,13 +84,7 @@ public class AutoPark : MonoBehaviour{
 		//Done - Give back control
 		control.autoParking = false;
 	}
-
-	void check()
-	{
-		Debug.Log("check" + checkCount);
-		checkCount++;
-	}
-
+	
 	private IEnumerator shiftDistanceBack(float distance)
 	{
 		performingBasicShift = true;
@@ -161,6 +155,78 @@ public class AutoPark : MonoBehaviour{
 		//Done - Give back control
 		control.autoParking = false;
 		performingBasicShift = false;
+	}
+
+	private IEnumerator shiftDistanceBackOffset(float distance, float offsetAngle)
+	{
+		
+		performingBasicShift = true;
+
+		//Prepare variables
+		float extraDistance = 0;
+		float angle = 0;
+		float anglePhi = 0;
+		float startAngle = control.getBodyAngleR();
+
+		float minimum1PointDistance = (1 - Mathf.Cos(angle)) * (control.ob60TurnR);
+		float maxCurveDistance = control.ob60TurnR - (1 - Mathf.Sin(offsetAngle)) * control.ib60TurnR + control.ib60TurnR;
+		int initialDirection = 1;
+
+		if (maxCurveDistance < distance)
+		{
+			anglePhi = 0.5f * Mathf.PI - offsetAngle;
+			extraDistance = distance - maxCurveDistance;
+		}
+		else if(distance > minimum1PointDistance) anglePhi = Mathf.Abs(Mathf.Acos((control.ib60TurnR * Mathf.Cos(angle) + control.ob60TurnR - distance) / (control.ib60TurnR + control.ob60TurnR)) - angle);
+		else anglePhi = -1 * Mathf.Abs(Mathf.Acos((control.ib60TurnR * Mathf.Cos(angle) + control.ob60TurnR - distance) / (control.ib60TurnR + control.ob60TurnR)) + angle);
+
+		if (anglePhi > 0) initialDirection = -1;
+		else initialDirection = 1;
+
+		Debug.Log("angle: " + angle + ",   anglePhi: " + anglePhi + ",   extraDistance: " + extraDistance + ",   offsetAngle: " + offsetAngle
+			+  ",   initialDirection: " + initialDirection);
+
+		StartCoroutine(breaK());
+		while (doingSubRoutine) yield return null;
+		Debug.Log("Done Breaking");
+
+		StartCoroutine(turnRight());
+		while (doingSubRoutine) yield return null;
+		Debug.Log("Done turning right");
+		//Back while turning right
+		control.command = new ControlCar.CommandSet(initialDirection, 1, false);
+		float a1 = (startAngle + anglePhi + rrad) % rrad + 0.01f;
+		float a2 = (startAngle + anglePhi + rrad) % rrad - 0.01f;
+		if ((startAngle + anglePhi + rrad) % rrad < 0.01f) a2 = 0;
+		if ((startAngle + anglePhi + rrad) % rrad > rrad - 0.01f) a1 = rrad;
+		while (control.getBodyAngleR() > a1 || control.getBodyAngleR() < a2 % (2 * Mathf.PI)) yield return null; //Until angle is more than required angle
+		StartCoroutine(breaK());
+		while (doingSubRoutine) yield return null;
+		Debug.Log("Done turning right");
+
+
+		if (extraDistance != 0)
+		{//If staight backing is necessary, do it now
+			StartCoroutine(backUpDistance(extraDistance));
+			while (doingSubRoutine) yield return null;
+			StartCoroutine(breaK());
+			while (doingSubRoutine) yield return null;
+		}
+
+		StartCoroutine(turnLeft());
+		while (doingSubRoutine) yield return null;
+		//Drive back while turning left
+		control.command = new ControlCar.CommandSet(-1, -1, false);
+		a1 = (startAngle + offsetAngle + rrad) % rrad + 0.01f;
+		a2 = (startAngle + offsetAngle + rrad) % rrad - 0.01f;
+		if ((startAngle + offsetAngle + rrad) % rrad < 0.01f) a2 = 0;
+		if ((startAngle + offsetAngle + rrad) % rrad > rrad - 0.01f) a1 = rrad;
+		while (control.getBodyAngleR() > a1 || control.getBodyAngleR() < a2 % (2 * Mathf.PI)) yield return null; //until back at no offset angle
+		StartCoroutine(breaK());
+		while (doingSubRoutine) yield return null;
+		StartCoroutine(turnMiddle());
+		while (doingSubRoutine) yield return null;
+
 	}
 
 	private IEnumerator shiftDistanceFront(float distance)
@@ -318,10 +384,14 @@ public class AutoPark : MonoBehaviour{
 	}
 	private IEnumerator turnRight()
 	{
+		Debug.Log("Starting turning right");
 		doingSubRoutine = true;
 		control.command = new ControlCar.CommandSet(0, 1, false); //Turn to the right
+		Debug.Log("in progress");
 		while (!(control.getWheelAngle() > control.maxRotation - 1 && control.getWheelAngle() < control.maxRotation + 1)) yield return null; // until wheel is allmost fully turned
+		Debug.Log("done progress");
 		doingSubRoutine = false;
+		Debug.Log("ACtually done turning right");
 	}
 	private IEnumerator backUpDistance(float distance)
 	{
