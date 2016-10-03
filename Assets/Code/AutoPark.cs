@@ -13,7 +13,7 @@ public class AutoPark : MonoBehaviour{
 
 	void Start()
 	{
-		StartCoroutine(shiftDistanceV4(10));
+		//StartCoroutine(shiftDistanceV4(10));
 	}
 
 	public void runAutoPark()
@@ -93,7 +93,7 @@ public class AutoPark : MonoBehaviour{
 
 	public void doShiftDistance(float distance)
 	{
-		StartCoroutine( shiftDistanceV2(20));
+		//StartCoroutine( shiftDistanceV2(20));
 	}
 	private IEnumerator shiftDistanceBack(float distance)
 	{
@@ -314,7 +314,20 @@ public class AutoPark : MonoBehaviour{
 	}
 	private IEnumerator shiftDistanceLimitedSpace(float distance)
 	{
+		bool turnRadiusExceeded = false;
+		float extraDistance = 0;
+		float angle = 0;
+		float startAngle = control.getBodyAngleR();
 
+		//Check if straight driving is needed and prepare variables
+		if (distance > (control.ib60TurnR + control.ob60TurnR) * 2)
+		{
+			Debug.Log("Space not limited");
+			angle = 90 * Mathf.Deg2Rad;
+			turnRadiusExceeded = true;
+			extraDistance = distance - (control.ib60TurnR + control.ob60TurnR) * 2;
+		}
+		else angle = Mathf.Asin(1 - (distance / ((control.ib60TurnR + control.ob60TurnR) * 2)));
 	}
 
 
