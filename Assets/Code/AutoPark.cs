@@ -13,14 +13,14 @@ public class AutoPark : MonoBehaviour{
 
 	void Start()
 	{
-<<<<<<< HEAD
-		StartCoroutine(turnRight());
-		//StartCoroutine(shiftDistanceBackOffset(4, 45 * Mathf.Deg2Rad));	
+		//StartCoroutine(turnRight());
+		//StartCoroutine(test());
+		StartCoroutine(shiftDistanceBackOffset(-4, 135 * Mathf.Deg2Rad));	
 		//StartCoroutine(shiftDistanceLimitedSpace(3, 3));
-=======
 		//StartCoroutine(shiftDistanceV4(10));
->>>>>>> origin/master
+		//runAutoPark();
 	}
+	
 
 	public void runAutoPark()
 	{
@@ -90,9 +90,7 @@ public class AutoPark : MonoBehaviour{
 		//Done - Give back control
 		control.autoParking = false;
 	}
-<<<<<<< HEAD
 	
-=======
 
 	void check()
 	{
@@ -104,7 +102,6 @@ public class AutoPark : MonoBehaviour{
 	{
 		//StartCoroutine( shiftDistanceV2(20));
 	}
->>>>>>> origin/master
 	private IEnumerator shiftDistanceBack(float distance)
 	{
 		performingBasicShift = true;
@@ -183,6 +180,8 @@ public class AutoPark : MonoBehaviour{
 		//Set up corutine handling
 		performingBasicShift = true;
 
+		control.autoParking = true;
+
 		//Move angle within right range
 		offsetAngle = (offsetAngle + rrad) % Mathf.PI; //offset angle shoud be between 0 and 180 degrees
 		//Make a copy of offsetAngle in degrees
@@ -202,7 +201,7 @@ public class AutoPark : MonoBehaviour{
 		float anglePhi = 0; //How many degrees first turn will be
 		float startAngle = control.getBodyAngleR(); //The angle at which the vehicle starts, in relation to globol coordinate system
 
-		float minimum1PointDistance = (1 - Mathf.Cos(offsetAngle)) * (control.ob60TurnR); //The distance moved along y-axis if the car directly aligns
+		float minimum1PointDistance = (1 - Mathf.Abs(Mathf.Cos(offsetAngle))) * (control.ob60TurnR); //The distance moved along y-axis if the car directly aligns
 																						  //itself with the desired axis, meassured at back wheel
 																						  //closest to the goal
 		float maxCurveDistance = control.ob60TurnR - (1 - Mathf.Sin(offsetAngle)) * control.ib60TurnR + control.ib60TurnR; //The distance if car turns
@@ -212,30 +211,32 @@ public class AutoPark : MonoBehaviour{
 		int initialDirection = 1; //Direction to do the first part of the turn (relative to the direction of the goal. 1 for same, -1 for opposite.
 
 
-		if (maxCurveDistance < distance) //If straight driving is to be employed, calculate distance of this.
+		Debug.Log("minumumpoiintdistance: " + minimum1PointDistance + "   distance: " + distance);
+		if (maxCurveDistance < Mathf.Abs(distance)) //If straight driving is to be employed, calculate distance of this.
 		{
 			anglePhi = 0.5f * Mathf.PI - offsetAngle; //Angle to turn to go perpendicular
-			extraDistance = distance - maxCurveDistance;	//Distance that would not be covered by the turn, and which should be driven straight when
+			extraDistance = Mathf.Abs(distance) - maxCurveDistance;	//Distance that would not be covered by the turn, and which should be driven straight when
 															//perpendicular
 		}
-		else if (distance > minimum1PointDistance) 
+		else if (Mathf.Abs(distance) > minimum1PointDistance) 
 		{	//Angle it has to turn towards wall, getting a total displacement larger than the minimum1PointDistance
-			anglePhi = Mathf.Abs(Mathf.Acos((control.ib60TurnR * Mathf.Cos(offsetAngle) + control.ob60TurnR - distance) / (control.ib60TurnR + control.ob60TurnR)) - offsetAngle);
+			anglePhi = Mathf.Abs(Mathf.Acos((control.ib60TurnR * Mathf.Cos(offsetAngle) + control.ob60TurnR - Mathf.Abs(distance)) / (control.ib60TurnR + control.ob60TurnR)) - offsetAngle) % Mathf.PI * 0.5f;
+			Debug.Log("case 1");
 		}
 		else
 		{	//Angle it has to turn away from wall, getting a smaller total displacement than the minimum1PointDistance
-			anglePhi = -1 * Mathf.Abs(Mathf.Acos((control.ib60TurnR * Mathf.Cos(offsetAngle) + control.ob60TurnR - distance) / (control.ib60TurnR + control.ob60TurnR)) + offsetAngle);
+			anglePhi = -1 * Mathf.Abs(Mathf.Acos((control.ib60TurnR * Mathf.Cos(offsetAngle % Mathf.PI) + control.ob60TurnR - Mathf.Abs(distance)) / (control.ib60TurnR + control.ob60TurnR)) + offsetAngle) % Mathf.PI * 0.5f;
 			initialDirection = -1; //Start by moving away from wall
+			Debug.Log("case 2");
 		}
+		Debug.Log("Phi: " + anglePhi);
 
 		int initialTurnDirection = 1;
 		//Initial turning direction. Depending on which side of the car is closest to the goal
 		if (offAngDeg < 90) initialTurnDirection = -1;
 
 
-
-		//Debug.Log("angle: " + angle + ",   anglePhi: " + anglePhi + ",   extraDistance: " + extraDistance + ",   offsetAngle: " + offsetAngle
-		//	+  ",   initialDirection: " + initialDirection);
+		
 
 		Debug.Log("done setting up");
 		StartCoroutine(breaK());
@@ -249,7 +250,8 @@ public class AutoPark : MonoBehaviour{
 		Debug.Log("Done wheel adjust 1");
 
 		//Back while turning
-		control.command = new ControlCar.CommandSet(initialDirection, directionToGoal * initialDirection, false);
+
+		control.command = new ControlCar.CommandSet(directionToGoal * initialDirection, initialTurnDirection, false);
 		float addAng = 0; //The angle to add to startangle
 						  //Note, that if it actually has to turn away from the given y-axis, anglePhi is already negative
 		if (offAngDeg < 90 && directionToGoal == 1) addAng = anglePhi; //it has to turn towards the relative y-axis, from positive x-axis (from 0-90 -> 90)
@@ -257,11 +259,13 @@ public class AutoPark : MonoBehaviour{
 																						//+y-axis (from 90-180 -> 180
 		else if (offAngDeg < 90 && directionToGoal == -1) addAng = anglePhi * -1; //it has to turn towards the -y-axis from the +x-axis (360-270 -> 270)
 		else if (90 < offAngDeg && directionToGoal == -1) addAng = anglePhi; // turn towards -y-axis from -x-axis (180-270 -> 270)
+		addAng *= -1; 
 
 		float a1 = (startAngle + addAng + rrad) % rrad + 0.01f;
 		float a2 = (startAngle + addAng + rrad) % rrad - 0.01f;
 		if ((startAngle + addAng + rrad) % rrad < 0.01f) { a2 = 0; a1 = 0.02f; } //make sure that a1 doesnt go below zero
 		if ((startAngle + addAng + rrad) % rrad > rrad - 0.01f) { a1 = rrad; a2 = rrad - 0.02f; } //make sure that a2 doesnt go above rrad. 
+		Debug.Log("Addang1: " + (addAng*Mathf.Rad2Deg));
 		while (control.getBodyAngleR() > a1 || control.getBodyAngleR() < a2 % (2 * Mathf.PI)) yield return null; //Until angle is between the two angles
 		Debug.Log("Done turning 1");
 
@@ -289,24 +293,26 @@ public class AutoPark : MonoBehaviour{
 		else if (90 < offAngDeg && directionToGoal == 1) addAng = Mathf.PI - offsetAngle;
 		else if (offAngDeg < 90 && directionToGoal == -1) addAng = offsetAngle;
 		else if (90 < offAngDeg && directionToGoal == -1) addAng = (Mathf.PI - offsetAngle) * -1;
-
+		addAng *= -1;
 		//Drive towards goal, while turning towards parallel to non-offset angle
-		control.command = new ControlCar.CommandSet(initialTurnDirection * -1, directionToGoal, false);
+		control.command = new ControlCar.CommandSet(directionToGoal, initialTurnDirection * -1, false);
 	
 		a1 = (startAngle + addAng + rrad) % rrad + 0.01f;
 		a2 = (startAngle + addAng + rrad) % rrad - 0.01f;
 		if ((startAngle + addAng + rrad) % rrad < 0.01f) { a2 = 0; a1 = 0.02f; }
 		if ((startAngle + addAng + rrad) % rrad > rrad - 0.01f) { a1 = rrad; a2 = rrad - 0.02f; }
+		Debug.Log("Addang2: " + (addAng*Mathf.Rad2Deg));
 		while (control.getBodyAngleR() > a1 || control.getBodyAngleR() < a2 % (2 * Mathf.PI)) yield return null; //until between a1 and a2
 		Debug.Log("Done turn 2");
 
 		StartCoroutine(breaK());
 		while (doingSubRoutine) yield return null;
-		Debug.Log("Done break 3");
+		Debug.Log("Done break 3");	
 		StartCoroutine(turnMiddle());
 		while (doingSubRoutine) yield return null;
 		Debug.Log("Done turn 3. Done.");
 
+		control.autoParking = false;
 	}
 
 	private IEnumerator shiftDistanceFront(float distance)
@@ -389,7 +395,6 @@ public class AutoPark : MonoBehaviour{
 	}
 	private IEnumerator shiftDistanceFrontBack(float distance)
 	{
-<<<<<<< HEAD
 		StartCoroutine(shiftDistanceFront(distance * 0.5f));
 		while (performingBasicShift) yield return null;
 		StartCoroutine(shiftDistanceBack(distance * 0.5f));
@@ -439,10 +444,9 @@ public class AutoPark : MonoBehaviour{
 		StartCoroutine(shiftDistanceFront((distance - distanceShifted) / 2));
 		while (performingBasicShift) yield return null;
 		yield return null;
-=======
 		bool turnRadiusExceeded = false;
-		float extraDistance = 0;
-		float angle = 0;
+		extraDistance = 0;
+		angle = 0;
 		float startAngle = control.getBodyAngleR();
 
 		//Check if straight driving is needed and prepare variables
@@ -454,7 +458,6 @@ public class AutoPark : MonoBehaviour{
 			extraDistance = distance - (control.ib60TurnR + control.ob60TurnR) * 2;
 		}
 		else angle = Mathf.Asin(1 - (distance / ((control.ib60TurnR + control.ob60TurnR) * 2)));
->>>>>>> origin/master
 	}
 
 
