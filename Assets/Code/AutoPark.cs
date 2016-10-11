@@ -13,9 +13,13 @@ public class AutoPark : MonoBehaviour{
 
 	void Start()
 	{
+<<<<<<< HEAD
 		StartCoroutine(turnRight());
 		//StartCoroutine(shiftDistanceBackOffset(4, 45 * Mathf.Deg2Rad));	
 		//StartCoroutine(shiftDistanceLimitedSpace(3, 3));
+=======
+		//StartCoroutine(shiftDistanceV4(10));
+>>>>>>> origin/master
 	}
 
 	public void runAutoPark()
@@ -86,7 +90,21 @@ public class AutoPark : MonoBehaviour{
 		//Done - Give back control
 		control.autoParking = false;
 	}
+<<<<<<< HEAD
 	
+=======
+
+	void check()
+	{
+		Debug.Log("check" + checkCount);
+		checkCount++;
+	}
+
+	public void doShiftDistance(float distance)
+	{
+		//StartCoroutine( shiftDistanceV2(20));
+	}
+>>>>>>> origin/master
 	private IEnumerator shiftDistanceBack(float distance)
 	{
 		performingBasicShift = true;
@@ -371,6 +389,7 @@ public class AutoPark : MonoBehaviour{
 	}
 	private IEnumerator shiftDistanceFrontBack(float distance)
 	{
+<<<<<<< HEAD
 		StartCoroutine(shiftDistanceFront(distance * 0.5f));
 		while (performingBasicShift) yield return null;
 		StartCoroutine(shiftDistanceBack(distance * 0.5f));
@@ -420,6 +439,22 @@ public class AutoPark : MonoBehaviour{
 		StartCoroutine(shiftDistanceFront((distance - distanceShifted) / 2));
 		while (performingBasicShift) yield return null;
 		yield return null;
+=======
+		bool turnRadiusExceeded = false;
+		float extraDistance = 0;
+		float angle = 0;
+		float startAngle = control.getBodyAngleR();
+
+		//Check if straight driving is needed and prepare variables
+		if (distance > (control.ib60TurnR + control.ob60TurnR) * 2)
+		{
+			Debug.Log("Space not limited");
+			angle = 90 * Mathf.Deg2Rad;
+			turnRadiusExceeded = true;
+			extraDistance = distance - (control.ib60TurnR + control.ob60TurnR) * 2;
+		}
+		else angle = Mathf.Asin(1 - (distance / ((control.ib60TurnR + control.ob60TurnR) * 2)));
+>>>>>>> origin/master
 	}
 
 
